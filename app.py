@@ -3,7 +3,7 @@ import requests
 from flask_cors import CORS
 from random import *
 
-app = Flask(__name__, template_folder='../dist', static_folder='../dist/static')
+app = Flask(__name__, template_folder='../frontend/dist', static_folder='../frontend/dist')
 
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
