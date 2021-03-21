@@ -1,4 +1,8 @@
+import feedparser
+
+
 def main():
+    FEED_URL = []
     pass
 
 

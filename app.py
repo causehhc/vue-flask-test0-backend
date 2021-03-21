@@ -3,22 +3,24 @@ import requests
 from flask_cors import CORS
 from random import *
 
-app = Flask(__name__, template_folder='../frontend/dist', static_folder='../dist/frontend/static')
+app = Flask(__name__, template_folder='../dist', static_folder='../dist/static')
 
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-some_list = []
-lens = 20
-for i in range(lens):
-    item = {
+lens = 10
+items = {
         'body': {
-            'content': '',
-            'totalPages': ''
-        },
+            'content': [],
+            'totalPages': '',
+        }
     }
-    item['body']['content'] = 'page{}'.format(i)
-    item['body']['totalPages'] = '{}'.format(lens)
-    some_list.append(item)
+for i in range(lens):
+    temp = {
+            "postTitle": 'Title{}'.format(i),
+            'postContent': 'Content{}'.format(i)
+        }
+    items['body']['content'].append(temp)
+items['body']['totalPages'] = '5'
 
 
 @app.route('/api/random')
@@ -29,16 +31,10 @@ def random_number():
     return jsonify(response)
 
 
-idx = 0
-
-
 @app.route('/api/info')
 def msg_load():
-    global idx
-    response = some_list[idx]
-    idx += 1
-    if idx == len(some_list):
-        idx = 0
+    # global idx
+    response = items
     return jsonify(response)
 
 
