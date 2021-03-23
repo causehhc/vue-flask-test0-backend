@@ -1,26 +1,13 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 import requests
 from flask_cors import CORS
 from random import *
 
-app = Flask(__name__, template_folder='../frontend/dist', static_folder='../frontend/dist')
+app = Flask(__name__, template_folder='../frontend/dist', static_folder='../frontend/dist/')
 
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-lens = 10
-items = {
-        'body': {
-            'content': [],
-            'totalPages': '',
-        }
-    }
-for i in range(lens):
-    temp = {
-            "postTitle": 'Title{}'.format(i),
-            'postContent': 'Content{}'.format(i)
-        }
-    items['body']['content'].append(temp)
-items['body']['totalPages'] = '5'
+user_lib = {'admin': '111111', '2': '2'}
 
 
 @app.route('/api/random')
@@ -31,10 +18,55 @@ def random_number():
     return jsonify(response)
 
 
-@app.route('/api/info')
+@app.route('/api/list/info', methods=['GET'])
 def msg_load():
-    # global idx
-    response = items
+    lens = 10
+    response = {
+        'code': 20000,
+        'body': {
+            'content': [],
+            'totalPages': '',
+        }
+    }
+    for i in range(lens):
+        temp = {
+            "postTitle": 'Title{}'.format(i),
+            'postContent': 'Content{}'.format(i)
+        }
+        response['body']['content'].append(temp)
+    response['body']['totalPages'] = '5'
+    return jsonify(response)
+
+
+@app.route('/api/user/login', methods=['POST'])
+def user_login():
+    post_data = request.get_json()
+    response = {
+        'code': 0,
+        'data': 'admin-token',
+    }
+    if post_data['username'] in user_lib:
+        if post_data['password'] == user_lib[post_data['username']]:
+            response['code'] = 20000
+    return jsonify(response)
+
+
+@app.route('/api/user/info', methods=['GET'])
+def user_info():
+    response = {
+        'code': 20000,
+        'data': 'admin-token',
+    }
+    return jsonify(response)
+
+
+@app.route('/api/user/logout', methods=['POST'])
+def user_logout():
+    post_data = request.get_json()
+    response = {
+        'code': 20000,
+        'data': 'success',
+    }
     return jsonify(response)
 
 
