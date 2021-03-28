@@ -1,30 +1,20 @@
 from flask import Flask, render_template, jsonify, request
-import requests
 from flask_cors import CORS
-from random import *
-import uuid
+import requests
+
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from flask_paginate import Pagination
+
+from models import M_Info
 
 app = Flask(__name__, template_folder='../frontend/dist', static_folder='../frontend/dist/')
-
-
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-user_dict = {}  # username:class<User>
-
-
-class User:
-    def __init__(self, ID):
-        self.ID = ID
-        self.name = None
-        self.password = None
-
-
-@app.route('/api/random')
-def random_number():
-    response = {
-        'randomNumber': randint(1, 100)
-    }
-    return jsonify(response)
+engine = create_engine("mysql+pymysql://root:password@127.0.0.1:3306/hhctest?charset=utf8")
+DBSession = sessionmaker(bind=engine)
+sess = DBSession()
 
 
 @app.route('/api/list/dynamic', methods=['GET'])
@@ -69,11 +59,14 @@ def msg_load_export():
     return jsonify(response)
 
 
-@app.route('/api/list/anls', methods=['GET'])
+@app.route('/api/list/anls', methods=['POST'])
 def msg_load_anls():
-    print('msg_load_anls')
-    print(user_dict)
-    lens = 25
+    post_data = request.get_json()
+    print('msg_load_anls', post_data)
+    limit = 25
+    start = post_data['count'] - 1
+    end = start + limit
+    data_list = sess.query(M_Info).slice(start, end).all()
     response = {
         'code': 20000,
         'body': {
@@ -81,10 +74,10 @@ def msg_load_anls():
             'totalPages': '',
         }
     }
-    for i in range(lens):
+    for data in data_list:
         temp = {
-            "postTitle": 'Title{}'.format(i),
-            'postContent': 'Content{}'.format(i)
+            "postTitle": '{}'.format(data.ititle),
+            'postContent': '{}'.format(data.isummer)
         }
         response['body']['content'].append(temp)
     response['body']['totalPages'] = '100'
@@ -96,28 +89,14 @@ def user_login():
     post_data = request.get_json()
     print(post_data)
     response = {
-        'code': 0,
-        'data': '',
+        'code': 20000,
+        'data': 'admin-token',
     }
-    if post_data['username'] in user_dict:
-        if post_data['password'] == user_dict[post_data['username']].password:
-            response['code'] = 20000
-            response['data'] = user_dict[post_data['username']].ID
-    else:
-        new = User(uuid.uuid1())
-        new.name = post_data['username']
-        new.password = post_data['password']
-
-        user_dict[new.name] = new
-        response['code'] = 20000
-        response['data'] = new.ID
     return jsonify(response)
 
 
-@app.route('/api/user/info', methods=['POST'])
+@app.route('/api/user/info', methods=['GET'])
 def user_info():
-    post_data = request.get_json()
-    print(post_data)
     response = {
         'code': 20000,
         'data': 'admin-token',
@@ -142,7 +121,6 @@ def catch_all(path):
     if app.debug:
         return requests.get('http://localhost:8080/{}'.format(path)).text
     return render_template("index.html")
-    # return 'hello'
 
 
 if __name__ == '__main__':
