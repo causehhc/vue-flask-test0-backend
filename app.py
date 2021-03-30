@@ -1,36 +1,26 @@
 from flask import Flask, render_template, jsonify, request
-import requests
 from flask_cors import CORS
-from random import *
+import requests
 import uuid
+from models import *
+from control import SqlHandler
 
-app = Flask(__name__, template_folder='../frontend/dist', static_folder='../frontend/dist/')
-
-
+app = Flask(__name__, template_folder='../frontend/dist', static_folder='../frontend/dist/static')
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-user_dict = {}  # username:class<User>
+# sql = SqlHandler('root', 'password', 'localhost', 'hhctest')
+sql = SqlHandler('root', 'xld123456XLD', '192.168.2.174', 'hhctest')
+sess = sql.get_sess()
 
 
-class User:
-    def __init__(self, ID):
-        self.ID = ID
-        self.name = None
-        self.password = None
-
-
-@app.route('/api/random')
-def random_number():
-    response = {
-        'randomNumber': randint(1, 100)
-    }
-    return jsonify(response)
-
-
-@app.route('/api/list/dynamic', methods=['GET'])
+@app.route('/api/list/dynamic', methods=['POST'])
 def msg_load_dynamic():
-    print('msg_load_dynamic')
-    lens = 25
+    post_data = request.get_json()
+    print('msg_load_anls', post_data)
+    limit = 25
+    start = post_data['count'] - 1
+    end = start + limit
+    data_list = sess.query(M_Info).slice(start, end).all()
     response = {
         'code': 20000,
         'body': {
@@ -38,21 +28,24 @@ def msg_load_dynamic():
             'totalPages': '',
         }
     }
-    for i in range(lens):
+    for data in data_list:
         temp = {
-            "postTitle": 'Title{}'.format(i),
-            'postContent': 'Content{}'.format(i),
-            'postSummer': 'Content{}'.format(i)
+            "postTitle": '{}'.format(data.ititle),
+            'postContent': '{}'.format(data.isummer)
         }
         response['body']['content'].append(temp)
     response['body']['totalPages'] = '100'
     return jsonify(response)
 
 
-@app.route('/api/list/export', methods=['GET'])
+@app.route('/api/list/export', methods=['POST'])
 def msg_load_export():
-    print('msg_load_export')
-    lens = 25
+    post_data = request.get_json()
+    print('msg_load_anls', post_data)
+    limit = 25
+    start = post_data['count'] - 1
+    end = start + limit
+    data_list = sess.query(M_Info).slice(start, end).all()
     response = {
         'code': 20000,
         'body': {
@@ -60,21 +53,24 @@ def msg_load_export():
             'totalPages': '',
         }
     }
-    for i in range(lens):
+    for data in data_list:
         temp = {
-            "postTitle": 'Title{}'.format(i),
-            'postContent': 'Content{}'.format(i)
+            "postTitle": '{}'.format(data.ititle),
+            'postContent': '{}'.format(data.isummer)
         }
         response['body']['content'].append(temp)
     response['body']['totalPages'] = '100'
     return jsonify(response)
 
 
-@app.route('/api/list/anls', methods=['GET'])
+@app.route('/api/list/anls', methods=['POST'])
 def msg_load_anls():
-    print('msg_load_anls')
-    print(user_dict)
-    lens = 25
+    post_data = request.get_json()
+    print('msg_load_anls', post_data)
+    limit = 25
+    start = post_data['count'] - 1
+    end = start + limit
+    data_list = sess.query(M_Info).slice(start, end).all()
     response = {
         'code': 20000,
         'body': {
@@ -82,10 +78,10 @@ def msg_load_anls():
             'totalPages': '',
         }
     }
-    for i in range(lens):
+    for data in data_list:
         temp = {
-            "postTitle": 'Title{}'.format(i),
-            'postContent': 'Content{}'.format(i)
+            "postTitle": '{}'.format(data.ititle),
+            'postContent': '{}'.format(data.isummer)
         }
         response['body']['content'].append(temp)
     response['body']['totalPages'] = '100'
@@ -94,38 +90,42 @@ def msg_load_anls():
 
 @app.route('/api/user/login', methods=['POST'])
 def user_login():
+    print('user_login')
     post_data = request.get_json()
-    print(post_data)
+    data_list = sess.query(M_User).filter(M_User.uname == post_data['username']).all()
     response = {
-        'code': 20000,
-        'data': '8888',
+        'code': 0,
+        'data': '',
     }
-    if post_data['username'] in user_dict:
-        if post_data['password'] == user_dict[post_data['username']].password:
-            response['code'] = 20000
-            response['data'] = user_dict[post_data['username']].ID
-    else:
-        new = User(uuid.uuid1())
-        new.name = post_data['username']
-        new.password = post_data['password']
-
-        user_dict[new.name] = new
+    if len(data_list) == 0:  # 注册
+        temp_uid = uuid.uuid1()
+        new_user = M_User(uid=temp_uid,
+                          uname=post_data['username'],
+                          upassword=post_data['password'])
+        sess.add(new_user)
+        sess.commit()
         response['code'] = 20000
-        response['data'] = new.ID
+        response['data'] = str(temp_uid)
+    else:  # 已存在，验证密码
+        if post_data['password'] == data_list[0].upassword:
+            response['code'] = 20000
+            response['data'] = str(data_list[0].uid)
     return jsonify(response)
 
 
 @app.route('/api/user/info', methods=['GET'])
 def user_info():
+    print('user_info', request.values.get('token'))
     response = {
         'code': 20000,
-        'data': 'admin-token',
+        'data': 'admin-token2',
     }
     return jsonify(response)
 
 
 @app.route('/api/user/logout', methods=['POST'])
 def user_logout():
+    print('user_logout')
     post_data = request.get_json()
     print(post_data)
     response = {
@@ -141,7 +141,6 @@ def catch_all(path):
     if app.debug:
         return requests.get('http://localhost:8080/{}'.format(path)).text
     return render_template("index.html")
-    # return 'hello'
 
 
 if __name__ == '__main__':
