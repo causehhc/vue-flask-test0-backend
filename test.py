@@ -10,10 +10,10 @@ from flask_paginate import Pagination
 
 from models import *
 
-app = Flask(__name__, template_folder='../frontend/dist', static_folder='../frontend/dist/')
+app = Flask(__name__, template_folder='../frontend/dist', static_folder='../frontend/dist')
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-engine = create_engine("mysql+pymysql://root:password@127.0.0.1:3306/hhctest?charset=utf8")
+engine = create_engine("mysql+pymysql://root:xld123456XLD@192.168.2.174:3306/hhctest?charset=utf8")
 DBSession = sessionmaker(bind=engine)
 sess = DBSession()
 
