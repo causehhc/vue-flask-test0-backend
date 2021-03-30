@@ -1,13 +1,14 @@
 from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
 import requests
+import uuid
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from flask_paginate import Pagination
 
-from models import M_Info
+from models import *
 
 app = Flask(__name__, template_folder='../frontend/dist', static_folder='../frontend/dist/')
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
@@ -17,10 +18,14 @@ DBSession = sessionmaker(bind=engine)
 sess = DBSession()
 
 
-@app.route('/api/list/dynamic', methods=['GET'])
+@app.route('/api/list/dynamic', methods=['POST'])
 def msg_load_dynamic():
-    print('msg_load_dynamic')
-    lens = 25
+    post_data = request.get_json()
+    print('msg_load_anls', post_data)
+    limit = 25
+    start = post_data['count'] - 1
+    end = start + limit
+    data_list = sess.query(M_Info).slice(start, end).all()
     response = {
         'code': 20000,
         'body': {
@@ -28,20 +33,24 @@ def msg_load_dynamic():
             'totalPages': '',
         }
     }
-    for i in range(lens):
+    for data in data_list:
         temp = {
-            "postTitle": 'Title{}'.format(i),
-            'postContent': 'Content{}'.format(i)
+            "postTitle": '{}'.format(data.ititle),
+            'postContent': '{}'.format(data.isummer)
         }
         response['body']['content'].append(temp)
     response['body']['totalPages'] = '100'
     return jsonify(response)
 
 
-@app.route('/api/list/export', methods=['GET'])
+@app.route('/api/list/export', methods=['POST'])
 def msg_load_export():
-    print('msg_load_export')
-    lens = 25
+    post_data = request.get_json()
+    print('msg_load_anls', post_data)
+    limit = 25
+    start = post_data['count'] - 1
+    end = start + limit
+    data_list = sess.query(M_Info).slice(start, end).all()
     response = {
         'code': 20000,
         'body': {
@@ -49,10 +58,10 @@ def msg_load_export():
             'totalPages': '',
         }
     }
-    for i in range(lens):
+    for data in data_list:
         temp = {
-            "postTitle": 'Title{}'.format(i),
-            'postContent': 'Content{}'.format(i)
+            "postTitle": '{}'.format(data.ititle),
+            'postContent': '{}'.format(data.isummer)
         }
         response['body']['content'].append(temp)
     response['body']['totalPages'] = '100'
@@ -86,26 +95,42 @@ def msg_load_anls():
 
 @app.route('/api/user/login', methods=['POST'])
 def user_login():
+    print('user_login')
     post_data = request.get_json()
-    print(post_data)
+    data_list = sess.query(M_User).filter(M_User.uname == post_data['username']).all()
     response = {
-        'code': 20000,
-        'data': 'admin-token',
+        'code': 0,
+        'data': '',
     }
+    if len(data_list) == 0:  # 注册
+        temp_uid = uuid.uuid1()
+        new_user = M_User(uid=temp_uid,
+                          uname=post_data['username'],
+                          upassword=post_data['password'])
+        sess.add(new_user)
+        sess.commit()
+        response['code'] = 20000
+        response['data'] = str(temp_uid)
+    else:  # 已存在，验证密码
+        if post_data['password'] == data_list[0].upassword:
+            response['code'] = 20000
+            response['data'] = str(data_list[0].uid)
     return jsonify(response)
 
 
 @app.route('/api/user/info', methods=['GET'])
 def user_info():
+    print('user_info', request.values.get('token'))
     response = {
         'code': 20000,
-        'data': 'admin-token',
+        'data': 'admin-token2',
     }
     return jsonify(response)
 
 
 @app.route('/api/user/logout', methods=['POST'])
 def user_logout():
+    print('user_logout')
     post_data = request.get_json()
     print(post_data)
     response = {

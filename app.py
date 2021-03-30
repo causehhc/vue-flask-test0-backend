@@ -41,7 +41,8 @@ def msg_load_dynamic():
     for i in range(lens):
         temp = {
             "postTitle": 'Title{}'.format(i),
-            'postContent': 'Content{}'.format(i)
+            'postContent': 'Content{}'.format(i),
+            'postSummer': 'Content{}'.format(i)
         }
         response['body']['content'].append(temp)
     response['body']['totalPages'] = '100'
@@ -96,8 +97,8 @@ def user_login():
     post_data = request.get_json()
     print(post_data)
     response = {
-        'code': 0,
-        'data': '',
+        'code': 20000,
+        'data': '8888',
     }
     if post_data['username'] in user_dict:
         if post_data['password'] == user_dict[post_data['username']].password:
@@ -114,10 +115,8 @@ def user_login():
     return jsonify(response)
 
 
-@app.route('/api/user/info', methods=['POST'])
+@app.route('/api/user/info', methods=['GET'])
 def user_info():
-    post_data = request.get_json()
-    print(post_data)
     response = {
         'code': 20000,
         'data': 'admin-token',
