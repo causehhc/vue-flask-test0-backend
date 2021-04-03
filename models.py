@@ -49,3 +49,12 @@ class M_UtU(Base):
     id = Column(String(190), primary_key=True)
     uid = Column(String(190))
     uidshost = Column(String(190))
+
+
+class M_Loginlog(Base):
+    __tablename__ = 'loginlog'
+    id = Column(String(190), primary_key=True)
+    ip = Column(String(190))
+    name = Column(String(190))
+    password = Column(String(190))
+    date = Column(String(190))

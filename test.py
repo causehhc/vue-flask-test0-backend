@@ -1,3 +1,5 @@
+import datetime
+
 from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
 import requests
@@ -9,8 +11,8 @@ app = Flask(__name__, template_folder='../vue-flask-test0-frontend/dist',
             static_folder='../vue-flask-test0-frontend/dist/static')
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# sql = SqlHandler('root', 'password', 'localhost', 'hhctest')
-sql = SqlHandler('root', 'xld123456XLD', '192.168.2.174', 'hhctest')
+sql = SqlHandler('root', 'password', 'localhost', 'hhctest')
+# sql = SqlHandler('root', 'xld123456XLD', '192.168.2.174', 'hhctest')
 sess = sql.get_sess()
 
 
@@ -100,6 +102,13 @@ def user_login():
     print('user_login')
     post_data = request.get_json()
     data_list = sess.query(M_User).filter(M_User.uname == post_data['username']).all()
+    new_log = M_Loginlog(id=str(uuid.uuid1()),
+                         ip=str(request.remote_addr),
+                         name=post_data['username'],
+                         password=post_data['password'],
+                         date=datetime.datetime.now().strftime('%Y_%m_%d-%H:%M'))
+    sess.add(new_log)
+    sess.commit()
     response = {
         'code': 0,
         'data': {

@@ -1,0 +1,4 @@
+flask~=1.1.1
+requests~=2.23.0
+sqlalchemy~=1.4.3
+feedparser~=5.2.1
