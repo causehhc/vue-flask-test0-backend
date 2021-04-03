@@ -28,6 +28,7 @@ class M_Src(Base):
     sname = Column(String(190))
     surl = Column(String(190))
     supdated = Column(String(190))
+    ssummer = Column(String(190))
 
 
 class M_UtI(Base):

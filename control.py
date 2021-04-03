@@ -82,10 +82,19 @@ class SqlHandler:
 
         return update_num
 
+    def info_getAll(self, uid):
+        pass
+
+    def uts_removeSrc(self, uid, sid):
+        pass
+
+    def uts_addSrc(self, uid, sid):
+        pass
+
 
 def main():
-    # sql = SqlHandler('root', 'password', 'localhost', 'hhctest')
-    sql = SqlHandler('root', 'xld123456XLD', '192.168.2.174', 'hhctest')
+    sql = SqlHandler('root', 'password', 'localhost', 'hhctest')
+    # sql = SqlHandler('root', 'xld123456XLD', '192.168.2.174', 'hhctest')
     src_list = [
         ['BBC_News', 'http://feeds.bbci.co.uk/news/rss.xml'],
         ['Engadget', 'http://www.engadget.com/rss.xml'],
@@ -93,10 +102,14 @@ def main():
         ['Yanko_Design', 'http://www.yankodesign.com/feed/'],
         ['TEDTalks(video)', 'https://www.ted.com/feeds/talks.rss'],
         ['FAIL_Blog', 'http://feeds.feedburner.com/failblog'],
-        ['github', 'https://github.com/guanguans/favorite-link/commits/master.atom']
+        ['github', 'https://github.com/guanguans/favorite-link/commits/master.atom'],
+        ['CI0udG0d', 'http://feed.cnblogs.com/blog/u/550390/rss/']
     ]
     # sql.src_addTitle(src_list)
-    sql.info_reflashAll(src_name_list=None, all_force=True)
+    # sql.info_reflashAll(src_name_list=None, all_force=True)
+    # sql.info_getAll(uid)
+    # sql.uts_addSrc(uid, sid)
+    # sql.uts_removeSrc(uid, sid)
 
 
 if __name__ == '__main__':
