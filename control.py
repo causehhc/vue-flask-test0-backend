@@ -103,10 +103,10 @@ def main():
         ['TEDTalks(video)', 'https://www.ted.com/feeds/talks.rss'],
         ['FAIL_Blog', 'http://feeds.feedburner.com/failblog'],
         ['github', 'https://github.com/guanguans/favorite-link/commits/master.atom'],
-        ['CI0udG0d', 'http://feed.cnblogs.com/blog/u/550390/rss/']
+        ['CI0udG0d', 'http://feed.cnblogs.com/blog/u/550390/rss']
     ]
     # sql.src_addTitle(src_list)
-    # sql.info_reflashAll(src_name_list=None, all_force=True)
+    sql.info_reflashAll(src_name_list=None, all_force=True)
     # sql.info_getAll(uid)
     # sql.uts_addSrc(uid, sid)
     # sql.uts_removeSrc(uid, sid)

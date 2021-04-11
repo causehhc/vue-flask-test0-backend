@@ -5,11 +5,14 @@ import uuid
 from models import *
 from control import SqlHandler
 
-app = Flask(__name__, template_folder='../vue-flask-test0-frontend/dist', static_folder='../vue-flask-test0-frontend/dist/static')
+app = Flask(__name__,
+            template_folder='../frontend/dist',
+            static_folder='../frontend/dist/static')
+
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# sql = SqlHandler('root', 'password', 'localhost', 'hhctest')
-sql = SqlHandler('root', 'xld123456XLD', '192.168.2.174', 'hhctest')
+sql = SqlHandler('root', 'password', 'localhost', 'hhctest')
+# sql = SqlHandler('root', 'xld123456XLD', '192.168.2.174', 'hhctest')
 sess = sql.get_sess()
 
 
