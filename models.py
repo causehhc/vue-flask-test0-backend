@@ -13,6 +13,7 @@ class M_Info(Base):
     ilink = Column(Text())
     isummer = Column(Text())
     iupdated = Column(String(190))
+    ilikes = Column(String(190))
 
 
 class M_User(Base):

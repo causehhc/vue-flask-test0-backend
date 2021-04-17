@@ -39,12 +39,37 @@ def msg_load_dynamic():
         }
     }
     for data in info_list:
+        srcName = sess.query(M_Src).filter(M_Src.sid == data.sid).one().sname
         temp = {
+            "postSrc": '{}'.format(srcName),
             "postTitle": '{}'.format(data.ititle),
-            'postContent': '{}'.format(data.isummer)
+            'postContent': '{}'.format(data.isummer),
+            'postUpdated': '{}'.format(data.iupdated),
+            'postLikes': '{}'.format(data.ilikes),
+            'postID': '{}'.format(data.iid),
         }
         response['body']['content'].append(temp)
-    response['body']['totalPages'] = '{}'.format(int(len(info_list) / limit) + 1)
+    response['body']['totalPages'] = '{}'.format(len(src_info_list))
+    return jsonify(response)
+
+
+@app.route('/api/list/likes', methods=['POST'])
+def postLikes():
+    post_data = request.get_json()
+    print('postLikes', post_data)
+    user_result = sess.query(M_Info).filter_by(iid=post_data['ID']).first()
+    # 更新字段名称
+    tmp = user_result.ilikes
+    user_result.ilikes = str(int(tmp)+1)
+    # 提交即保存到数据库
+    sess.commit()
+
+    response = {
+        'code': 20000,
+        'body': {
+            'data': 'success'
+        }
+    }
     return jsonify(response)
 
 
@@ -69,7 +94,7 @@ def msg_load_export():
             'postContent': '{}'.format(data.isummer)
         }
         response['body']['content'].append(temp)
-    response['body']['totalPages'] = '100'
+    response['body']['totalPages'] = '{}'.format(len(data_list))
     return jsonify(response)
 
 
@@ -158,6 +183,10 @@ def user_login():
         if post_data['password'] == data_list[0].upassword:
             response['code'] = 20000
             response['data']['token'] = str(data_list[0].uid)
+        else:
+            response['code'] = 20001
+            response['data']['token'] = str(data_list[0].uid)
+    print(response)
     return jsonify(response)
 
 
