@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import re
 import uuid
 
 import aiohttp
@@ -84,6 +85,8 @@ class SqlHandler:
                     ITitle = entry['title']
                     ILink = entry['link']
                     temp_s = entry['summary']
+                    dr = re.compile(r'<[^>]+>', re.S)
+                    temp_s = dr.sub('', temp_s)
                     if len(temp_s) > 190:
                         temp_s = temp_s[0:190]
                     ISummer = temp_s
@@ -114,8 +117,10 @@ class SqlHandler:
 
         return update_num
 
-    def info_getAll(self, uid):
-        pass
+    def info_getAll(self):
+        all_info = self._sess.query(M_Info).all()
+        ans = [x.isummer for x in all_info]
+        return ans
 
     def uts_removeSrc(self, uid, sid):
         pass

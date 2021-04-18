@@ -1,0 +1,102 @@
+from control import SqlHandler
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.manifold import TSNE
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+import jieba
+
+
+def main_engine():
+    """
+            1、加载语料
+        """
+    print('1、加载语料')
+    sql = SqlHandler('root', 'password', 'localhost', 'hhctest')
+    corpus = sql.info_getAll()
+    sent_words = [list(jieba.cut(sent0)) for sent0 in corpus]
+    corpus = [' '.join(sent0) for sent0 in sent_words]
+
+    '''
+        2、计算tf-idf设为权重
+    '''
+    print('2、计算tf-idf设为权重')
+    stop_words = open('./stopwords-master/baidu_stopwords.txt', 'r', encoding='utf-8').read().split('\n')
+    print(stop_words)
+    vectorizer = TfidfVectorizer(stop_words=stop_words)
+    text = vectorizer.fit_transform(corpus)
+    text_weight = text.toarray()
+    print(len(vectorizer.get_feature_names()))
+    print(vectorizer.get_feature_names())
+    print(text_weight)
+    '''
+        3、对向量进行聚类
+    '''
+    print('3、对向量进行聚类')
+    # 指定分成7个类
+    n_clusters = 2
+    kmeans = KMeans(n_clusters=n_clusters)
+    kmeans.fit(text_weight)
+
+    # 打印出各个族的中心点
+    print(kmeans.cluster_centers_)
+    for index, label in enumerate(kmeans.labels_, 1):
+        print("index: {}, label: {}".format(index, label))
+
+    # 样本距其最近的聚类中心的平方距离之和，用来评判分类的准确度，值越小越好
+    # k-means的超参数n_clusters可以通过该值来评估
+    print("inertia: {}".format(kmeans.inertia_))
+
+    '''
+        4、可视化
+    '''
+    print('4、可视化')
+    # 使用T-SNE算法，对权重进行降维，准确度比PCA算法高，但是耗时长
+    tsne = TSNE(n_components=2)
+    decomposition_data = tsne.fit_transform(text_weight)
+
+    x = []
+    y = []
+
+    for i in decomposition_data:
+        x.append(i[0])
+        y.append(i[1])
+
+    fig = plt.figure(figsize=(10, 10))
+    ax = plt.axes()
+    plt.scatter(x, y, c=kmeans.labels_, marker="x")
+    plt.xticks(())
+    plt.yticks(())
+    plt.show()
+    # plt.savefig('./sample.png', aspect=1)
+
+
+def get_nodes_links():
+    sql = SqlHandler('root', 'password', 'localhost', 'hhctest')
+    corpus = sql.info_getAll()
+    sent_words = [list(jieba.cut(sent0)) for sent0 in corpus]
+    corpus = [' '.join(sent0) for sent0 in sent_words]
+    stop_words = open('./clustering/stopwords-master/baidu_stopwords.txt', 'r', encoding='utf-8').read().split('\n')
+    vectorizer = TfidfVectorizer(stop_words=stop_words)
+    text = vectorizer.fit_transform(corpus)
+    text_weight = text.toarray()
+    n_clusters = 2
+    kmeans = KMeans(n_clusters=n_clusters)
+    kmeans.fit(text_weight)
+
+    nodes = []
+    links = []
+    # 打印出各个族的中心点
+    print(kmeans.cluster_centers_)
+    for index, label in enumerate(kmeans.labels_, 1):
+        tmp = {'id': '{}'.format(index), 'group': '{}'.format(label)}
+        nodes.append(tmp)
+
+    return nodes, links
+
+
+def main():
+    main_engine()
+
+
+if __name__ == '__main__':
+    main()
