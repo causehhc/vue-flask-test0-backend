@@ -1,9 +1,11 @@
-from control import SqlHandler
+from database import MySqlHelper
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.manifold import TSNE
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 import jieba
+from scipy.linalg import norm
+import numpy as np
 
 
 def main_engine():
@@ -11,7 +13,7 @@ def main_engine():
             1、加载语料
         """
     print('1、加载语料')
-    sql = SqlHandler('root', 'password', 'localhost', 'hhctest')
+    sql = MySqlHelper('root', 'password', 'localhost', 'hhctest')
     corpus = sql.info_getAll()
     sent_words = [list(jieba.cut(sent0)) for sent0 in corpus]
     corpus = [' '.join(sent0) for sent0 in sent_words]
@@ -70,12 +72,24 @@ def main_engine():
     # plt.savefig('./sample.png', aspect=1)
 
 
-def get_nodes_links():
-    sql = SqlHandler('root', 'password', 'localhost', 'hhctest')
-    corpus = sql.info_getAll()
-    sent_words = [list(jieba.cut(sent0)) for sent0 in corpus]
+def get_sim(text_weight, index1, index2):
+    sim = np.dot(text_weight[index1 - 1], text_weight[index2 - 1]) / (
+            norm(text_weight[index1 - 1]) * norm(text_weight[index2 - 1]))
+    sim = int(100 - (sim * 100))
+    return sim
+
+
+def get_nodes_links(path):
+    sql = MySqlHelper('root', 'password', 'localhost', 'hhctest')
+    corpus_orin = sql.info_getAll()
+    # corpus_orin = ['教育经历和工作经历没有空间',
+    #                '我们能改进的只有专业技能和项目经历了',
+    #                '我有两家大厂工作经验',
+    #                '精通来描述一项专业技能的掌握程度']
+    # corpus_orin = corpus_orin[0:100]
+    sent_words = [list(jieba.cut(sent0)) for sent0 in corpus_orin]
     corpus = [' '.join(sent0) for sent0 in sent_words]
-    stop_words = open('./clustering/stopwords-master/baidu_stopwords.txt', 'r', encoding='utf-8').read().split('\n')
+    stop_words = open(path, 'r', encoding='utf-8').read().split('\n')
     vectorizer = TfidfVectorizer(stop_words=stop_words)
     text = vectorizer.fit_transform(corpus)
     text_weight = text.toarray()
@@ -86,16 +100,40 @@ def get_nodes_links():
     nodes = []
     links = []
     # 打印出各个族的中心点
-    print(kmeans.cluster_centers_)
+    print(text_weight)
+    # print(np.dot(text_weight[0], text_weight[1]) / (norm(text_weight[0]) * norm(text_weight[1])))
+    # print(kmeans.cluster_centers_)
     for index, label in enumerate(kmeans.labels_, 1):
-        tmp = {'id': '{}'.format(index), 'group': '{}'.format(label)}
+        tmp = {'id': '{}'.format(corpus_orin[index - 1]), 'group': '{}'.format(label)}
         nodes.append(tmp)
 
+    for index, label in enumerate(kmeans.labels_, 1):
+        if index != len(kmeans.labels_):
+            for index2 in range(index + 1, len(kmeans.labels_) + 1):
+                sim = get_sim(text_weight, index - 1, index2 - 1)
+                if sim < 50:
+                    tmp = {'source': '{}'.format(corpus_orin[index - 1]),
+                           'target': '{}'.format(corpus_orin[index2 - 1]),
+                           'value': '{}'.format(sim)
+                           }
+                    links.append(tmp)
+
+    # for index, label in enumerate(kmeans.labels_, 1):
+    #     if index != len(kmeans.labels_):
+    #         sim = get_sim(text_weight, index - 1, index)
+    #         tmp = {'source': '{}'.format(corpus_orin[index - 1]),
+    #                'target': '{}'.format(corpus_orin[index]),
+    #                'value': '{}'.format(sim)
+    #                }
+    #         links.append(tmp)
     return nodes, links
 
 
 def main():
-    main_engine()
+    # main_engine()
+    nodes, links = get_nodes_links('./stopwords-master/baidu_stopwords.txt')
+    print(nodes)
+    print(links)
 
 
 if __name__ == '__main__':

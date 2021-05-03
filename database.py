@@ -8,35 +8,44 @@ import feedparser
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models import *
+from flask_sqlalchemy import SQLAlchemy
 
 
-class SqlHandler:
-    def __init__(self, user, passwd, host, name):
-        engine = create_engine("mysql+pymysql://{}:{}@{}:3306/{}?charset=utf8mb4".format(user, passwd, host, name))
-        DBSession = sessionmaker(bind=engine)
-        self._sess = DBSession()
+class MySqlHelper:
+    def __init__(self, app):
+        user = 'root'
+        passwd = 'password'
+        # passwd = 'xld123456XLD'
+        host = 'localhost'
+        # host = '192.168.2.174'
+        name = 'hhctest'
+        SQLALCHEMY_DATABASE_URI = "mysql+pymysql://{}:{}@{}:3306/{}?charset=utf8mb4".format(user, passwd, host, name)
+        app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
+        app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+        self._db = SQLAlchemy(app)
 
-    def get_sess(self):
-        return self._sess
+
+    def get_db(self):
+        return self._db
 
     def clear_all(self):
-        self._sess.query(M_Info).delete()
-        self._sess.commit()
+        self._db.session().query(M_Info).delete()
+        self._db.session().commit()
         print('delete ok')
 
     def src_addTitle(self, src_list):
         for src in src_list:
-            if len(self._sess.query(M_Src).filter(M_Src.sname == src[0]).all()) != 0:
+            if len(self._db.session.query(M_Src).filter(M_Src.sname == src[0]).all()) != 0:
                 print('insert fail! exists: {}'.format(src[0]))
             else:
                 new_src = M_Src(sid=str(uuid.uuid1()),
                                 sname=src[0],
                                 surl=src[1],
                                 supdated='2020')
-                self._sess.add(new_src)
+                self._db.session.add(new_src)
                 print('insert finished! exists: {}'.format(src[0]))
         # 提交即保存到数据库
-        self._sess.commit()
+        self._db.session.commit()
 
     def info_reflashAll(self, src_name_list=None, all_force=False):
         update_num = {}  # (src.stitle - cnt) 每个源更新的条目数量
@@ -44,9 +53,9 @@ class SqlHandler:
 
         if src_name_list is not None:
             for src_name in src_name_list:
-                src_item_list.append(self._sess.query(M_Src).filter(M_Src.sname == src_name[0]).one())
+                src_item_list.append(self._db.session.query(M_Src).filter(M_Src.sname == src_name[0]).one())
         else:
-            src_item_list = self._sess.query(M_Src).all()
+            src_item_list = self._db.session.query(M_Src).all()
         print('({}) src loaded...'.format(len(src_item_list)))
 
         async def handle_tasks(task_id, work_queue, RSS_dicts):
@@ -94,7 +103,7 @@ class SqlHandler:
                         IUpdated = str(entry['published'])
                     else:
                         IUpdated = datetime.datetime.now().strftime('%Y_%m_%d-%H:%M')
-                    if len(self._sess.query(M_Info).filter(M_Info.ititle == ITitle).all()) != 0:
+                    if len(self._db.session.query(M_Info).filter(M_Info.ititle == ITitle).all()) != 0:
                         print('update fail! is exists: {}'.format(ITitle))
                     else:
                         new_info = M_Info(iid=str(uuid.uuid1()),
@@ -104,7 +113,7 @@ class SqlHandler:
                                           isummer=ISummer,
                                           iupdated=IUpdated,
                                           ilikes=0)
-                        self._sess.add(new_info)
+                        self._db.session.add(new_info)
                         add_cnt += 1
                         print('update finished! add exists: {}'.format(ITitle))
                 update_num[src_item.sname] = add_cnt
@@ -112,13 +121,13 @@ class SqlHandler:
             else:
                 print('updated fail! now not updated: {}'.format(src_item.sname))
         # 提交即保存到数据库
-        self._sess.commit()
+        self._db.session.commit()
         print('check finished!')
 
         return update_num
 
     def info_getAll(self):
-        all_info = self._sess.query(M_Info).all()
+        all_info = self._db.session.query(M_Info).all()
         ans = [x.isummer for x in all_info]
         return ans
 
@@ -129,12 +138,12 @@ class SqlHandler:
         pass
 
     def test(self):
-        self._sess.query(M_Info).order_by(M_Info.iupdated.desc()).all()
+        self._db.session.query(M_Info).order_by(M_Info.iupdated.desc()).all()
         pass
 
 
 def main():
-    sql = SqlHandler('root', 'password', 'localhost', 'hhctest')
+    sql = MySqlHelper('root', 'password', 'localhost', 'hhctest')
     # sql = SqlHandler('root', 'xld123456XLD', '192.168.2.174', 'hhctest')
     src_list = [
         # ['BBC_News', 'http://feeds.bbci.co.uk/news/rss.xml'],
@@ -145,6 +154,7 @@ def main():
         # ['FAIL_Blog', 'http://feeds.feedburner.com/failblog'],
         # ['github', 'https://github.com/guanguans/favorite-link/commits/master.atom'],
         ['CI0udG0d', 'http://feed.cnblogs.com/blog/u/550390/rss'],
+        ['wa', 'https://wsgzao.github.io/atom.xml'],
         ['开源中国社区', 'https://www.oschina.net/blog/rss'],
         # ['台灣最視覺系的全球要聞', 'https://dq.yam.com/rss.php'],
         ['软件改变生活', 'https://feed.iplaysoft.com/'],
