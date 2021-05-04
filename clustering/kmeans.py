@@ -13,7 +13,7 @@ def main_engine():
             1、加载语料
         """
     print('1、加载语料')
-    sql = MySqlHelper('root', 'password', 'localhost', 'hhctest')
+    sql = MySqlHelper()
     corpus = sql.info_getAll()
     sent_words = [list(jieba.cut(sent0)) for sent0 in corpus]
     corpus = [' '.join(sent0) for sent0 in sent_words]
@@ -75,12 +75,12 @@ def main_engine():
 def get_sim(text_weight, index1, index2):
     sim = np.dot(text_weight[index1 - 1], text_weight[index2 - 1]) / (
             norm(text_weight[index1 - 1]) * norm(text_weight[index2 - 1]))
-    sim = int(100 - (sim * 100))
+    # sim = int(100 - (sim * 100))
     return sim
 
 
 def get_nodes_links(path):
-    sql = MySqlHelper('root', 'password', 'localhost', 'hhctest')
+    sql = MySqlHelper()
     corpus_orin = sql.info_getAll()
     # corpus_orin = ['教育经历和工作经历没有空间',
     #                '我们能改进的只有专业技能和项目经历了',
@@ -93,7 +93,7 @@ def get_nodes_links(path):
     vectorizer = TfidfVectorizer(stop_words=stop_words)
     text = vectorizer.fit_transform(corpus)
     text_weight = text.toarray()
-    n_clusters = 2
+    n_clusters = 10
     kmeans = KMeans(n_clusters=n_clusters)
     kmeans.fit(text_weight)
 
@@ -107,25 +107,34 @@ def get_nodes_links(path):
         tmp = {'id': '{}'.format(corpus_orin[index - 1]), 'group': '{}'.format(label)}
         nodes.append(tmp)
 
+    sim_edge_list = []
     for index, label in enumerate(kmeans.labels_, 1):
         if index != len(kmeans.labels_):
             for index2 in range(index + 1, len(kmeans.labels_) + 1):
                 sim = get_sim(text_weight, index - 1, index2 - 1)
-                if sim < 50:
-                    tmp = {'source': '{}'.format(corpus_orin[index - 1]),
-                           'target': '{}'.format(corpus_orin[index2 - 1]),
-                           'value': '{}'.format(sim)
-                           }
-                    links.append(tmp)
+                if sim != 0:
+                    tmp = {
+                        'source': '{}'.format(corpus_orin[index - 1]),
+                        'target': '{}'.format(corpus_orin[index2 - 1]),
+                        'value': '{}'.format(sim)
+                    }
+                    sim_edge_list.append(tmp)
+    sim_edge_list = sorted(sim_edge_list, reverse=True, key=lambda x: x['value'])
+    # for item in sim_list:
+    #     print(item)
 
-    # for index, label in enumerate(kmeans.labels_, 1):
-    #     if index != len(kmeans.labels_):
-    #         sim = get_sim(text_weight, index - 1, index)
-    #         tmp = {'source': '{}'.format(corpus_orin[index - 1]),
-    #                'target': '{}'.format(corpus_orin[index]),
-    #                'value': '{}'.format(sim)
-    #                }
-    #         links.append(tmp)
+    hashset = set()
+    for item in sim_edge_list:
+        # if item['value'] > '0':
+            print(item['value'])
+            if item['target'] not in hashset:
+                hashset.add(item['source'])
+                hashset.add(item['target'])
+                links.append(item)
+            elif item['source'] not in hashset:
+                hashset.add(item['source'])
+                links.append(item)
+
     return nodes, links
 
 

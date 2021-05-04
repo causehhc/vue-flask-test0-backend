@@ -6,13 +6,19 @@ import uuid
 import aiohttp
 import feedparser
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import sessionmaker, scoped_session
 from models import *
 from flask_sqlalchemy import SQLAlchemy
 
 
+class MySession:
+    def __init__(self, sess):
+        self.session = sess
+
+
 class MySqlHelper:
-    def __init__(self, app):
+    def __init__(self, app=None):
         user = 'root'
         passwd = 'password'
         # passwd = 'xld123456XLD'
@@ -20,10 +26,15 @@ class MySqlHelper:
         # host = '192.168.2.174'
         name = 'hhctest'
         SQLALCHEMY_DATABASE_URI = "mysql+pymysql://{}:{}@{}:3306/{}?charset=utf8mb4".format(user, passwd, host, name)
-        app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
-        app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-        self._db = SQLAlchemy(app)
-
+        if app is not None:
+            app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
+            app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+            self._db = SQLAlchemy(app)
+        else:
+            engine = create_engine(SQLALCHEMY_DATABASE_URI)
+            Session = sessionmaker(bind=engine)
+            session = Session()
+            self._db = MySession(session)
 
     def get_db(self):
         return self._db
@@ -143,7 +154,7 @@ class MySqlHelper:
 
 
 def main():
-    sql = MySqlHelper('root', 'password', 'localhost', 'hhctest')
+    sql = MySqlHelper()
     # sql = SqlHandler('root', 'xld123456XLD', '192.168.2.174', 'hhctest')
     src_list = [
         # ['BBC_News', 'http://feeds.bbci.co.uk/news/rss.xml'],
